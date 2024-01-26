@@ -37,17 +37,36 @@ const getLogsByUserId = (req, res) => {
 };
 
 const postNovoLog = (req, res) => {
-  const newLog = req.body;
+  const newLogData = req.body;
 
-  connection.query('INSERT INTO logs SET ?', newLog, (err, results) => {
-    if (err) {
-      console.error('Erro ao inserir novo log no MySQL:', err);
-      res.status(500).json({ error: 'Erro ao inserir novo log no MySQL' });
-    } else {
+  // Adicione logs para verificar os dados recebidos
+  console.log('Dados recebidos:', newLogData);
+
+  if (!newLogData || !newLogData.dados_id) {
+    return res.status(400).json({ error: 'Dados inválidos no corpo da requisição. Certifique-se de incluir "dados_id" no corpo da requisição.' });
+  }
+
+  connection.query(
+    'INSERT INTO logs (dados_id, data, hours, nameUserLog, email, cpf, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [
+      newLogData.dados_id,
+      newLogData.data,
+      newLogData.hours,
+      newLogData.nameUserLog,
+      newLogData.email,
+      newLogData.cpf,
+      newLogData.status
+    ],
+    (err, results) => {
+      if (err) {
+        console.error('Erro ao inserir novo log no MySQL:', err);
+        return res.status(500).json({ error: 'Erro ao inserir novo log no MySQL' });
+      }
+
       console.log('Novo log inserido no MySQL:', results);
       res.json({ message: 'Novo log recebido e inserido no MySQL com sucesso.' });
     }
-  });
+  );
 };
 
 const PDFDocument = require('pdf-lib').PDFDocument

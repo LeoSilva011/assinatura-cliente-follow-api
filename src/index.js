@@ -1,3 +1,33 @@
+const express = require('express');
+const cors = require('cors');
+const { connection } = require('./config');
+const dadosRoutes = require('./routes/dadosRouter');
+
+const app = express();
+const port = 3000;
+
+// Configuração específica para permitir solicitações apenas de http://localhost:4200
+const corsOptions = {
+  origin: 'http://localhost:4200',
+  optionsSuccessStatus: 200,
+};
+
+// Middleware para configurar o CORS com opções específicas
+app.use(cors(corsOptions));
+
+// Middleware para analisar dados do corpo de solicitações JSON
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configuração das rotas
+app.use('/api', dadosRoutes);
+
+// Inicie o servidor
+app.listen(port, () => {
+  console.log(`Servidor rodando em http://localhost:${port}`);
+});
+/* 
+VERSAO ANTIGA
 // src/index.js
 const express = require('express');
 const dadosRoutes = require('./routes/dadosRouter');
@@ -39,3 +69,7 @@ app.use('/api', dadosRoutes);
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
 });
+
+
+
+*/
