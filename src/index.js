@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { connection } = require('./config');
 const dadosRoutes = require('./routes/dadosRouter');
-
+const {criarPDF} = require('./geradorPDF')
 const app = express();
 const port = 3000;
 
@@ -21,6 +21,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Configuração das rotas
 app.use('/api', dadosRoutes);
+
+criarPDF();
 
 // Inicie o servidor
 app.listen(port, () => {
