@@ -5,6 +5,7 @@ const { connection } = require('../config');
 
 
 
+
 const getUsuarioById = (req, res) => {
   const userId = req.params.idUser;
 
@@ -49,10 +50,34 @@ const postNovoLog = (req, res) => {
   });
 };
 
+const PDFDocument = require('pdf-lib').PDFDocument
+const fs = require('fs');
+
+
+const mesclarPDFs = async (pdfBuffer1, pdfBuffer2) => {
+  const mergedPdf = await PDFDocument.create();
+  
+  // Adiciona páginas do primeiro PDF
+  const pdf1 = await PDFDocument.load(pdfBuffer1);
+  const copiedPages1 = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
+  copiedPages1.forEach((page) => mergedPdf.addPage(page));
+
+  // Adiciona páginas do segundo PDF
+  const pdf2 = await PDFDocument.load(pdfBuffer2);
+  const copiedPages2 = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
+  copiedPages2.forEach((page) => mergedPdf.addPage(page));
+
+  // Salva o PDF mesclado como buffer
+  const buf = await mergedPdf.save();
+
+  return buf;
+};
+
 module.exports = {
   
   
   getUsuarioById,
   getLogsByUserId,
-  postNovoLog
+  postNovoLog,
+  mesclarPDFs
 };

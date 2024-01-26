@@ -15,16 +15,16 @@ const corsOptions = {
 
 
 
-app.use('/api', (req, res, next) => {
-  // Adicione o cabeçalho 'Access-Control-Allow-Origin' manualmente
-  res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-}, dadosRoutes);
+// app.use('/api', (req, res, next) => {
+//   // Adicione o cabeçalho 'Access-Control-Allow-Origin' manualmente
+//   res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
+//   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+//   res.header('Access-Control-Allow-Headers', 'Content-Type');
+//   next();
+// }, dadosRoutes);
 
 // Middleware para configurar o CORS com opções específicas
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 // Middleware para analisar dados do corpo de solicitações JSON
 app.use(express.json());
