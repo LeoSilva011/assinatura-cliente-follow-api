@@ -39,10 +39,34 @@ router.post('/upload-pdfs', upload.fields([{ name: 'pdfFile1' }, { name: 'pdfFil
 
     // Envie o buffer do PDF mesclado como resposta
     res.send(pdfMescladoBytes);
+
+    // Adicione a lógica para enviar o arquivo para o Firebase Storage aqui
+    const admin = require('firebase-admin');
+    const serviceAccount = require('../credencial-firebase/firebase-key.json');
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: 'gs://assinatura-cliente-follow-api.appspot.com', // Substitua pelo seu URL do Firebase Storage
+    });
+
+    const bucket = admin.storage().bucket();
+
+    // Caminho no Firebase Storage onde o arquivo será salvo
+    const caminhoNoFirebaseStorage = 'teste/resultado_mesclado.pdf';
+
+    // Upload do arquivo para o Firebase Storage
+    await bucket.upload(caminhoParaSalvar, {
+      destination: caminhoNoFirebaseStorage,
+    });
+
+    // URL do arquivo no Firebase Storage após o upload
+    const urlDoFirebaseStorage = `https://storage.googleapis.com/${bucket.name}/${caminhoNoFirebaseStorage}`;
+    console.log('Arquivo enviado para o Firebase Storage:', urlDoFirebaseStorage);
   } catch (error) {
     console.error('Erro ao processar o upload dos PDFs:', error);
     res.status(500).json({ erro: 'Erro ao processar o upload dos PDFs' });
   }
 });
+
 
 module.exports = router;
