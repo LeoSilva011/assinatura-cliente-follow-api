@@ -8,6 +8,10 @@ const router = express.Router();
 router.get('/dados/:idUser', dadosController.getUsuarioById); 
 router.get('/logs/:idUser', dadosController.getLogsByUserId);
 router.post('/logs', dadosController.postNovoLog); 
+
+
+
+
 const multer = require('multer');
 
 // Configuração do multer para o upload de arquivos
