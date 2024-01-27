@@ -8,15 +8,19 @@ const { connection } = require('../config');
 
 const getUsuarioById = (req, res) => {
   const userId = req.params.idUser;
-
+  console.log('UserID:', userId);
   connection.query('SELECT * FROM dados WHERE idUser = ?', [userId], (err, results) => {
+    console.log('Executando consulta SQL');
     if (err) {
       console.error('Erro ao buscar usuário por idUser no MySQL:', err);
       res.status(500).json({ error: 'Erro ao buscar usuário por idUser no MySQL' });
     } else {
+      console.log('Resultados do banco de dados:', results);
       if (results.length > 0) {
+        console.log('Dados encontrados:', results[0]);
         res.json(results[0]); // Retorna o primeiro usuário encontrado (deve ser único)
       } else {
+        console.log('Usuário não encontrado');
         res.status(404).json({ message: 'Usuário não encontrado' });
       }
     }
