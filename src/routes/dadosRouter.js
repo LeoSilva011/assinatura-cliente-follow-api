@@ -28,7 +28,7 @@ if (!admin.apps.length) {
   });
 }
 
-router.get('/dados/:idUser', dadosController.getUsuarioById); 
+
 router.get('/logs/:idUser', dadosController.getLogsByUserId);
 router.post('/logs', dadosController.postNovoLog); 
 

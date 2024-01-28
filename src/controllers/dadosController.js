@@ -1,31 +1,11 @@
 // src/controllers/dadosController.js
 const { query } = require('express');
 const { connection } = require('../config');
+const { format } = require('date-fns');
 
 
 
 
-
-const getUsuarioById = (req, res) => {
-  const userId = req.params.idUser;
-  console.log('UserID:', userId);
-  connection.query('SELECT * FROM dados WHERE idUser = ?', [userId], (err, results) => {
-    console.log('Executando consulta SQL');
-    if (err) {
-      console.error('Erro ao buscar usuário por idUser no MySQL:', err);
-      res.status(500).json({ error: 'Erro ao buscar usuário por idUser no MySQL' });
-    } else {
-      console.log('Resultados do banco de dados:', results);
-      if (results.length > 0) {
-        console.log('Dados encontrados:', results[0]);
-        res.json(results[0]); // Retorna o primeiro usuário encontrado (deve ser único)
-      } else {
-        console.log('Usuário não encontrado');
-        res.status(404).json({ message: 'Usuário não encontrado' });
-      }
-    }
-  });
-};
 
 const getLogsByUserId = (req, res) => {
   const userId = req.params.idUser;
@@ -40,6 +20,8 @@ const getLogsByUserId = (req, res) => {
   });
 };
 
+
+
 const postNovoLog = (req, res) => {
   const newLogData = req.body;
 
@@ -47,8 +29,15 @@ const postNovoLog = (req, res) => {
   console.log('Dados recebidos:', newLogData);
 
   if (!newLogData || !newLogData.dados_id) {
-    return res.status(400).json({ error: 'Dados inválidos no corpo da requisição. Certifique-se de incluir "dados_id" no corpo da requisição.' });
+    return res.status(400).json({
+      error: 'Dados inválidos no corpo da requisição. Certifique-se de incluir "dados_id" no corpo da requisição.'
+    });
   }
+
+  // Adicione a data e hora atuais no formato desejado (DD-MM-YYYY e HH:mm:ss)
+  const dataAtual = new Date();
+  newLogData.data = format(dataAtual, 'dd-MM-yyyy');
+  newLogData.hours = format(dataAtual, 'HH:mm:ss');
 
   connection.query(
     'INSERT INTO logs (dados_id, data, hours, nameUserLog, email, cpf, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -72,7 +61,6 @@ const postNovoLog = (req, res) => {
     }
   );
 };
-
 const PDFDocument = require('pdf-lib').PDFDocument
 const fs = require('fs');
 
@@ -98,8 +86,6 @@ const mesclarPDFs = async (pdfBuffer1, pdfBuffer2) => {
 
 module.exports = {
   
-  
-  getUsuarioById,
   getLogsByUserId,
   postNovoLog,
   mesclarPDFs
