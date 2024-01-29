@@ -1,29 +1,33 @@
 // src/config.js
 
+const mysql = require('mysql2');
 
-const { Pool } = require('pg');
+// Restante do código...
 
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL + "?sslmode=require",
-})
+
+// Configuração do banco de dados
+const dbConfig = {
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'dadosFollow',
+};
+
 // Crie uma conexão com o MySQL
-// const connection = mysql.createConnection(dbConfig);
-pool.connect((err)=>{
-  if (err) throw err;
-  console.log("Connect to PostSQL successfully")
-})
+const connection = mysql.createConnection(dbConfig);
+
 // Conecte-se ao MySQL
-// connection.connect((err) => {
-//   if (err) {
-//     console.error('Erro ao conectar ao MySQL:', err);
-//   } else {
-//     console.log('Conexão bem-sucedida ao MySQL');
-//   }
-// });
+connection.connect((err) => {
+  if (err) {
+    console.error('Erro ao conectar ao MySQL:', err);
+  } else {
+    console.log('Conexão bem-sucedida ao MySQL');
+  }
+});
 
 // Exporte a conexão para que possa ser usada em outros módulos
 module.exports = {
-  pool,
+  connection,
   // Restante das suas configurações de dados aqui...
   // ...
 };
