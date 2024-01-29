@@ -56,7 +56,7 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
 
     // Usar userId no nome do arquivo
     const nomeArquivo = `resultado_mesclado_${userId}.pdf`;
-  //  const caminhoParaSalvar = `src/download/${nomeArquivo}`;
+    const caminhoParaSalvar = `src/download/${nomeArquivo}`;
 
     // Salvar o PDF mesclado no sistema de arquivos
     fs.writeFileSync(caminhoParaSalvar, pdfMescladoBytes);
