@@ -10,7 +10,7 @@ const { Readable } = require('stream');
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'assinatura-cliente-follow-api.appspot.com',
+    storageBucket: 'assinatura-follow.appspot.com',
   });
 }
 
@@ -24,7 +24,7 @@ router.get('/download-pdf/:userId', async (req, res) => {
     const userId = req.params.userId;
   
     // Gere o nome do arquivo com base no userId
-    const nomeArquivo = `resultado_mesclado_${userId}`;
+    const nomeArquivo = `documento_assinado_${userId}`;
   
     // Caminho no Firebase Storage onde o arquivo foi salvo
     const caminhoNoFirebaseStorage = `teste/${nomeArquivo}.pdf`;
@@ -56,7 +56,7 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
     const pdfMescladoBytes = await dadosController.mesclarPDFs(pdfBuffer1, pdfBuffer2);
 
     // Usar userId no nome do arquivo
-    const nomeArquivo = `resultado_mesclado_${userId}.pdf`;
+    const nomeArquivo = `documento_assinado_${userId}.pdf`;
 
     // Caminho no Firebase Storage onde o arquivo será salvo
     const caminhoNoFirebaseStorage = `teste/${nomeArquivo}`;

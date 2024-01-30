@@ -18,7 +18,7 @@ const corsOptions = {
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'assinatura-cliente-follow-api.appspot.com',
+    storageBucket: 'assinatura-follow.appspot.com',
   });
 }
 
