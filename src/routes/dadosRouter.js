@@ -4,6 +4,7 @@ const fs = require('fs');
 const router = express.Router();
 const admin = require('firebase-admin');
 const serviceAccount = require('../credencial-firebase/firebase-key.json');
+const { Readable } = require('stream');
 
 // Verifica se o aplicativo já está inicializado antes de tentar inicializá-lo novamente
 if (!admin.apps.length) {
@@ -56,18 +57,22 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
 
     // Usar userId no nome do arquivo
     const nomeArquivo = `resultado_mesclado_${userId}.pdf`;
-    const caminhoParaSalvar = `src/download/${nomeArquivo}`;
-
-    // Salvar o PDF mesclado no sistema de arquivos
-    fs.writeFileSync(caminhoParaSalvar, pdfMescladoBytes);
 
     // Caminho no Firebase Storage onde o arquivo será salvo
     const caminhoNoFirebaseStorage = `teste/${nomeArquivo}`;
 
-    // Upload do arquivo para o Firebase Storage
-    await admin.storage().bucket().upload(caminhoParaSalvar, {
-      destination: caminhoNoFirebaseStorage,
-    });
+    // Criar um stream a partir do buffer
+    const bufferStream = new Readable();
+    bufferStream.push(pdfMescladoBytes);
+    bufferStream.push(null);
+
+    // Upload do arquivo para o Firebase Storage usando createWriteStream
+    await admin.storage().bucket().file(caminhoNoFirebaseStorage).createWriteStream({
+      metadata: {
+        contentType: 'application/pdf',
+        contentDisposition: `attachment; filename="${nomeArquivo}"`,
+      },
+    }).end(pdfMescladoBytes);
 
     // URL do arquivo no Firebase Storage após o upload
     const urlDoFirebaseStorage = `https://storage.googleapis.com/${admin.storage().bucket().name}/${caminhoNoFirebaseStorage}`;
@@ -86,5 +91,7 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
     res.status(500).json({ erro: 'Erro ao processar o upload dos PDFs' });
   }
 });
+
+
 
 module.exports = router;
