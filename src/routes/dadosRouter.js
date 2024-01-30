@@ -92,6 +92,8 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
   }
 });
 
-
+router.get('/teste', (req, res) => {
+  res.send('Bem-vindo à página principal!');
+});
 
 module.exports = router;
