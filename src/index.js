@@ -1,12 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const { connection } = require('./config');
 const dadosRoutes = require('./routes/dadosRouter');
-const { criarPDF } = require('./geradorPDF');
 const app = express();
 const admin = require('firebase-admin');
 const serviceAccount = require('./credencial-firebase/firebase-key.json');
-const port = 3000;
+const port = process.env.PORT? Number(process.env.PORT) : 3000
 
 // Configuração específica para permitir solicitações apenas de http://localhost:4200
 const corsOptions = {
