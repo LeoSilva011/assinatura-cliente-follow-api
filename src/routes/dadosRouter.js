@@ -1,3 +1,4 @@
+// src/routes/dadosRouter.js
 const express = require('express');
 const dadosController = require('../controllers/dadosController');
 const fs = require('fs');
@@ -5,6 +6,7 @@ const router = express.Router();
 const admin = require('firebase-admin');
 const serviceAccount = require('../credencial-firebase/firebase-key.json');
 const { Readable } = require('stream');
+
 
 // Verifica se o aplicativo já está inicializado antes de tentar inicializá-lo novamente
 if (!admin.apps.length) {
@@ -19,6 +21,9 @@ router.post('/logs', dadosController.postNovoLog);
 
 const multer = require('multer');
 const upload = multer(); // Aqui você pode ajustar as configurações conforme necessário
+
+
+
 router.get('/download-pdf/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -89,6 +94,33 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
   } catch (error) {
     console.error('Erro ao processar o upload dos PDFs:', error);
     res.status(500).json({ erro: 'Erro ao processar o upload dos PDFs' });
+  }
+});
+
+router.post('/mesclar-pdfs', async (req, res) => {
+  try {
+    const { pdfLinks } = req.body;
+
+    if (!pdfLinks || !Array.isArray(pdfLinks) || pdfLinks.length < 2) {
+      return res.status(400).json({ error: 'Forneça pelo menos dois links de PDF para mesclar.' });
+    }
+
+    const pdfMescladoBytes = await dadosController.mesclarPDFsPorLinks(pdfLinks);
+
+
+    res.setHeader('Content-Type', 'application/pdf');
+
+    
+    res.setHeader('Content-Disposition', 'attachment; filename="documento_mesclado.pdf"');
+
+    const pdfStream = new Readable();
+    pdfStream.push(pdfMescladoBytes);
+    pdfStream.push(null);
+
+    pdfStream.pipe(res);
+  } catch (error) {
+    console.error('Erro ao mesclar e devolver PDFs por links:', error);
+    res.status(500).json({ error: 'Erro ao mesclar e devolver PDFs por links' });
   }
 });
 

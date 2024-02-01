@@ -2,10 +2,30 @@
 const { query } = require('express');
 const { connection } = require('../config');
 const { format } = require('date-fns');
+const axios = require ('axios');
 
 
+const mesclarPDFsPorLinks = async (pdfLinks) => {
+  try {
+    const pdfBuffers = await Promise.all(pdfLinks.map(async (pdfLink) => {
+      const response = await axios.get(pdfLink, { responseType: 'arraybuffer' });
+      return Buffer.from(response.data, 'binary');
+    }));
 
+    const mergedPdf = await PDFDocument.create();
 
+    for (const pdfBuffer of pdfBuffers) {
+      const pdf = await PDFDocument.load(pdfBuffer);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+
+    return mergedPdf.save();
+  } catch (error) {
+    console.error('Erro ao mesclar PDFs por links:', error);
+    throw error;
+  }
+};
 
 const getLogsByUserId = (req, res) => {
   const userId = req.params.idUser;
@@ -88,5 +108,6 @@ module.exports = {
   
   getLogsByUserId,
   postNovoLog,
+  mesclarPDFsPorLinks,
   mesclarPDFs
 };
