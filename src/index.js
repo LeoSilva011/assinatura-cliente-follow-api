@@ -9,7 +9,7 @@ const port = process.env.PORT? Number(process.env.PORT) : 3000
 
 // Configuração específica para permitir solicitações apenas de http://localhost:4200
 const corsOptions = {
-  origin: ['http://localhost:4200', 'https://sign.appfollow.com.br/'],
+  origin: ['http://localhost:4200', 'https://sign.appfollow.com.br'],
   optionsSuccessStatus: 200,
 };
 
