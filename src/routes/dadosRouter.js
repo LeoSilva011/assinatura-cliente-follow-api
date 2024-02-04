@@ -53,7 +53,7 @@ router.get('/download-pdf/:userId', async (req, res) => {
 });
 
 const crypto = require('crypto');
-
+const zlib = require('zlib');
 router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name: 'pdfFile2' }]), async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -63,18 +63,13 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
     // Mesclar os PDFs
     const pdfMescladoBytes = await dadosController.mesclarPDFs(pdfBuffer1, pdfBuffer2);
 
-    //calcula um hash para o pdf
+    // Comprimir o buffer do PDF mesclado
+    const compressedPdfMescladoBytes = zlib.gzipSync(pdfMescladoBytes);
+
+    // Calcula um hash para o PDF
     const timestamp = new Date().getTime();
-
-    // Converte o timestamp para uma string
     const inputString = timestamp.toString();
-
     const hash = crypto.createHash('sha1').update(inputString).digest('hex');
-
-    
-  
-    // Calcula o hash SHA-256
-    
 
     // Usar hash no nome do arquivo
     const nomeArquivo = `documento_assinado_${hash}.pdf`;
@@ -82,9 +77,9 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
     // Caminho no Firebase Storage onde o arquivo será salvo
     const caminhoNoFirebaseStorage = `${userId}/${nomeArquivo}`;
 
-    // Criar um stream a partir do buffer
+    // Criar um stream a partir do buffer comprimido
     const bufferStream = new Readable();
-    bufferStream.push(pdfMescladoBytes);
+    bufferStream.push(compressedPdfMescladoBytes);
     bufferStream.push(null);
 
     // Upload do arquivo para o Firebase Storage usando createWriteStream
@@ -92,33 +87,22 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
       metadata: {
         contentType: 'application/pdf',
         contentDisposition: `attachment; filename="${nomeArquivo}"`,
+        contentEncoding: 'gzip', // Adicione o cabeçalho Content-Encoding
       },
-    }).end(pdfMescladoBytes);
+    }).end(compressedPdfMescladoBytes);
 
+    // Obter a URL assinada do Firebase Storage
     const [urlDoFirebaseStorage] = await admin
-    .storage()
-    .bucket()
-    .file(caminhoNoFirebaseStorage)
-    .getSignedUrl({
-      action: 'read',
-      expires: '01-01-2500', // Defina a data de expiração conforme necessário
-    });
+      .storage()
+      .bucket()
+      .file(caminhoNoFirebaseStorage)
+      .getSignedUrl({
+        action: 'read',
+        expires: '01-01-2500', // Defina a data de expiração conforme necessário
+      });
 
-
-    // URL do arquivo no Firebase Storage após o upload
-    // const urlDoFirebaseStorage = `https://storage.googleapis.com/${admin.storage().bucket().name}/${caminhoNoFirebaseStorage}`;
-    // console.log('Arquivo enviado para o Firebase Storage:', urlDoFirebaseStorage);
-
-    // Configurar cabeçalhos para indicar que o conteúdo é um PDF
-    // res.setHeader('Content-Type', 'application/pdf');
-
-    // // Configurar cabeçalhos para indicar que é um arquivo para download
-    // res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
-
-    // Enviar o buffer do PDF mesclado como resposta
-   // res.send(pdfMescladoBytes);
-   res.json({ url: urlDoFirebaseStorage });
-  
+    // Enviar a URL do Firebase Storage como resposta
+    res.json({ url: urlDoFirebaseStorage });
   } catch (error) {
     console.error('Erro ao processar o upload dos PDFs:', error);
     res.status(500).json({ erro: 'Erro ao processar o upload dos PDFs' });
