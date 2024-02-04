@@ -64,7 +64,7 @@ router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name:
     const pdfMescladoBytes = await dadosController.mesclarPDFs(pdfBuffer1, pdfBuffer2);
 
     // Comprimir o buffer do PDF mesclado
-    const compressedPdfMescladoBytes = zlib.gzipSync(pdfMescladoBytes);
+    const compressedPdfMescladoBytes = zlib.gzipSync(pdfMescladoBytes, { level: 9 });
 
     // Calcula um hash para o PDF
     const timestamp = new Date().getTime();
