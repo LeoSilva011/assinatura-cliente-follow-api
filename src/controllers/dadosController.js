@@ -7,6 +7,17 @@ const axios = require ('axios');
 
 const mesclarPDFsPorLinks = async (pdfLinks) => {
   try {
+    if (!pdfLinks || pdfLinks.length === 0) {
+      throw new Error('Nenhum link fornecido para mesclar PDFs.');
+    }
+
+    if (pdfLinks.length === 1) {
+      // Se houver apenas um link, retornar o PDF correspondente diretamente
+      const response = await axios.get(pdfLinks[0], { responseType: 'arraybuffer' });
+      return Buffer.from(response.data, 'binary');
+    }
+
+    // Se houver mais de um link, mesclar os PDFs
     const pdfBuffers = await Promise.all(pdfLinks.map(async (pdfLink) => {
       const response = await axios.get(pdfLink, { responseType: 'arraybuffer' });
       return Buffer.from(response.data, 'binary');
@@ -22,10 +33,12 @@ const mesclarPDFsPorLinks = async (pdfLinks) => {
 
     return mergedPdf.save();
   } catch (error) {
-    console.error('Erro ao mesclar PDFs por links:', error);
+    console.error('Erro ao mesclar ou retornar PDF por links:', error);
     throw error;
   }
 };
+
+
 
 const getLogsByUserId = (req, res) => {
   const userId = req.params.idUser;

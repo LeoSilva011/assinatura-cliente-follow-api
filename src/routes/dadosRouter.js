@@ -113,9 +113,7 @@ router.post('/mesclar-pdfs', async (req, res) => {
   try {
     const { pdfLinks } = req.body;
 
-    if (!pdfLinks || !Array.isArray(pdfLinks) || pdfLinks.length < 2) {
-      return res.status(400).json({ error: 'Forneça pelo menos dois links de PDF para mesclar.' });
-    }
+  
 
     const pdfMescladoBytes = await dadosController.mesclarPDFsPorLinks(pdfLinks);
 
