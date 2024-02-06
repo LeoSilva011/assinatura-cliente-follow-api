@@ -54,60 +54,74 @@ router.get('/download-pdf/:userId', async (req, res) => {
 
 const crypto = require('crypto');
 const zlib = require('zlib');
-router.post('/upload-pdfs/:userId', upload.fields([{ name: 'pdfFile1' }, { name: 'pdfFile2' }]), async (req, res) => {
+
+router.post('/upload-pdfs/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-    const pdfBuffer1 = req.files['pdfFile1'][0].buffer;
-    const pdfBuffer2 = req.files['pdfFile2'][0].buffer;
+    const jsonData = req.body;
 
-    // Mesclar os PDFs
-    const pdfMescladoBytes = await dadosController.mesclarPDFs(pdfBuffer1, pdfBuffer2);
+    // Verifica se o JSON possui a estrutura esperada
+    if (!jsonData.urlAssinatura || !jsonData.contratos || !Array.isArray(jsonData.contratos)) {
+      return res.status(400).json({ erro: 'JSON inválido. Certifique-se de incluir "urlAssinatura" e "contratos".' });
+    }
 
-    // Comprimir o buffer do PDF mesclado
-    const compressedPdfMescladoBytes = zlib.gzipSync(pdfMescladoBytes, { level: 9 });
+    // Carrega o buffer da URL de assinatura
+    const urlAssinaturaBuffer = await dadosController.fetchPdfBuffer(jsonData.urlAssinatura);
 
-    // Calcula um hash para o PDF
-    const timestamp = new Date().getTime();
-    const inputString = timestamp.toString();
-    const hash = crypto.createHash('sha1').update(inputString).digest('hex');
+    // Processa cada contrato no JSON
+    const contratosMesclados = await Promise.all(jsonData.contratos.map(async contrato => {
+      const contratoBuffer = await dadosController.fetchPdfBuffer(contrato.pdf_url);
+      const pdfMescladoBytes = await dadosController.mesclarPDFs(contratoBuffer, urlAssinaturaBuffer);
+      
+      const compressedPdfMescladoBytes = zlib.gzipSync(pdfMescladoBytes, { level: 9 });
 
-    // Usar hash no nome do arquivo
-    const nomeArquivo = `documento_assinado_${hash}.pdf`;
+      // Calcula um hash para o PDF
+      const timestamp = new Date().getTime();
+      const inputString = timestamp.toString();
+      const hash = crypto.createHash('sha1').update(inputString).digest('hex');
 
-    // Caminho no Firebase Storage onde o arquivo será salvo
-    const caminhoNoFirebaseStorage = `${userId}/${nomeArquivo}`;
+      // Usar hash no nome do arquivo
+      const nomeArquivo = `contrato_mesclado_${contrato.id}_${hash}.pdf`;
 
-    // Criar um stream a partir do buffer comprimido
-    const bufferStream = new Readable();
-    bufferStream.push(compressedPdfMescladoBytes);
-    bufferStream.push(null);
+      // Caminho no Firebase Storage onde o arquivo será salvo
+      const caminhoNoFirebaseStorage = `${userId}/${nomeArquivo}`;
 
-    // Upload do arquivo para o Firebase Storage usando createWriteStream
-    await admin.storage().bucket().file(caminhoNoFirebaseStorage).createWriteStream({
-      metadata: {
-        contentType: 'application/pdf',
-        contentDisposition: `attachment; filename="${nomeArquivo}"`,
-        contentEncoding: 'gzip', // Adicione o cabeçalho Content-Encoding
-      },
-    }).end(compressedPdfMescladoBytes);
+      // Criar um stream a partir do buffer comprimido
+      const bufferStream = new Readable();
+      bufferStream.push(compressedPdfMescladoBytes);
+      bufferStream.push(null);
 
-    // Obter a URL assinada do Firebase Storage
-    const [urlDoFirebaseStorage] = await admin
-      .storage()
-      .bucket()
-      .file(caminhoNoFirebaseStorage)
-      .getSignedUrl({
-        action: 'read',
-        expires: '01-01-2500', // Defina a data de expiração conforme necessário
-      });
+      // Upload do arquivo para o Firebase Storage usando createWriteStream
+      await admin.storage().bucket().file(caminhoNoFirebaseStorage).createWriteStream({
+        metadata: {
+          contentType: 'application/pdf',
+          contentDisposition: `attachment; filename="${nomeArquivo}"`,
+          contentEncoding: 'gzip', // Adicione o cabeçalho Content-Encoding
+        },
+      }).end(compressedPdfMescladoBytes);
 
-    // Enviar a URL do Firebase Storage como resposta
-    res.json({ url: urlDoFirebaseStorage });
+      // Obter a URL assinada do Firebase Storage
+      const [urlDoFirebaseStorage] = await admin
+        .storage()
+        .bucket()
+        .file(caminhoNoFirebaseStorage)
+        .getSignedUrl({
+          action: 'read',
+          expires: '01-01-2500', // Defina a data de expiração conforme necessário
+        });
+
+      return { id: contrato.id, pdf_url: urlDoFirebaseStorage };
+    }));
+
+    // Retorna o resultado como JSON
+    res.json({ contratosMesclados });
   } catch (error) {
     console.error('Erro ao processar o upload dos PDFs:', error);
     res.status(500).json({ erro: 'Erro ao processar o upload dos PDFs' });
   }
 });
+
+
 
 router.post('/mesclar-pdfs', async (req, res) => {
   try {
@@ -133,6 +147,67 @@ router.post('/mesclar-pdfs', async (req, res) => {
     res.status(500).json({ error: 'Erro ao mesclar e devolver PDFs por links' });
   }
 });
+
+
+router.post('/upload-assinatura/:userId', upload.single('pdfFile1'), async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const pdfBuffer1 = req.file.buffer;
+
+    // Calcula um hash para o PDF
+    const timestamp = new Date().getTime();
+    const inputString = timestamp.toString();
+    const hash = crypto.createHash('sha1').update(inputString).digest('hex');
+
+    // Usar hash no nome do arquivo
+    const nomeArquivo = `documento_assinatura_${hash}.pdf`;
+
+    // Caminho no Firebase Storage onde o arquivo será salvo
+    const caminhoNoFirebaseStorage = `${userId}/${nomeArquivo}`;
+
+    // Upload do arquivo para o Firebase Storage
+    const file = admin.storage().bucket().file(caminhoNoFirebaseStorage);
+    const stream = file.createWriteStream({
+      metadata: {
+        contentType: 'application/pdf',
+        contentDisposition: `attachment; filename="${nomeArquivo}"`,
+      },
+    });
+
+    stream.on('error', (err) => {
+      console.error('Erro no stream de gravação:', err);
+      res.status(500).json({ erro: 'Erro ao processar o upload do PDF' });
+    });
+
+    stream.on('finish', async () => {
+      // Obter a URL assinada do Firebase Storage
+      const [urlDoFirebaseStorage] = await file.getSignedUrl({
+        action: 'read',
+        expires: '01-01-2500', // Defina a data de expiração conforme necessário
+      });
+
+      // Enviar a URL do Firebase Storage como resposta
+      res.json({ url: urlDoFirebaseStorage });
+    });
+
+    // Inicia o stream de leitura do buffer do PDF
+    const bufferStream = new Readable();
+    bufferStream.push(pdfBuffer1);
+    bufferStream.push(null);
+
+    // Pipe o stream de leitura para o stream de gravação no Firebase Storage
+    bufferStream.pipe(stream);
+
+  } catch (error) {
+    console.error('Erro ao processar o upload do PDF:', error);
+    res.status(500).json({ erro: 'Erro ao processar o upload do PDF' });
+  }
+});
+
+
+
+
+
 
 router.get('/teste', (req, res) => {
   res.send('Bem-vindo à página principal!');

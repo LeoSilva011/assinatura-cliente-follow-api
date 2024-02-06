@@ -117,10 +117,40 @@ const mesclarPDFs = async (pdfBuffer1, pdfBuffer2) => {
   return buf;
 };
 
+const fetchPdfBuffer  = async(pdfUrl)=> {
+  try {
+    const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
+    return Buffer.from(response.data);
+  } catch (error) {
+    console.error('Erro ao buscar o buffer do PDF:', error);
+    throw new Error('Erro ao buscar o buffer do PDF');
+  }
+}
+
+const mesclarPDFs2 = async(pdfBuffer1, pdfBuffer2)=> {
+  const mergedPdf = await PDFDocument.create();
+
+  const pdf1 = await PDFDocument.load(pdfBuffer1);
+  const pdf2 = await PDFDocument.load(pdfBuffer2);
+
+  const copiedPages1 = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
+  const copiedPages2 = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
+
+  copiedPages1.forEach((page) => mergedPdf.addPage(page));
+  copiedPages2.forEach((page) => mergedPdf.addPage(page));
+
+  return await mergedPdf.save();
+}
+
+
+
+
 module.exports = {
   
   getLogsByUserId,
   postNovoLog,
   mesclarPDFsPorLinks,
-  mesclarPDFs
+  mesclarPDFs,
+  fetchPdfBuffer,
+  mesclarPDFs2
 };
