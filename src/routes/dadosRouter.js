@@ -110,7 +110,7 @@ router.post('/upload-pdfs/:userId', async (req, res) => {
           expires: '01-01-2500', // Defina a data de expiração conforme necessário
         });
 
-      return { id: contrato.id, pdf_url: urlDoFirebaseStorage };
+      return { id: contrato.id,title:contrato.title, url: urlDoFirebaseStorage };
     }));
 
     // Retorna o resultado como JSON
