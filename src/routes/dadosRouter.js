@@ -6,7 +6,7 @@ const router = express.Router();
 const admin = require('firebase-admin');
 const serviceAccount = require('../credencial-firebase/firebase-key.json');
 const { Readable } = require('stream');
-
+const axios = require ('axios');
 
 // Verifica se o aplicativo já está inicializado antes de tentar inicializá-lo novamente
 if (!admin.apps.length) {
@@ -204,8 +204,56 @@ router.post('/upload-assinatura/:userId', upload.single('pdfFile1'), async (req,
   }
 });
 
+const JSZip = require('jszip');
+const { promisify } = require('util');
+const writeFileAsync = promisify(fs.writeFile);
 
 
+router.post('/zip-files', async (req, res) => {
+  const { urls } = req.body;
+
+  if (!urls || !Array.isArray(urls)) {
+    return res.status(400).json({ error: 'A lista de URLs é inválida.' });
+  }
+
+  try {
+    const zip = new JSZip();
+
+    // Itera sobre as URLs e baixa os arquivos
+    await Promise.all(urls.map(async (url, index) => {
+      try {
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        zip.file(`file${index + 1}.pdf`, response.data);
+      } catch (error) {
+        console.error(`Erro ao baixar o arquivo da URL ${url}:`, error);
+      }
+    }));
+
+    // Gera o arquivo ZIP
+    const zipData = await zip.generateAsync({ type: 'nodebuffer' });
+
+    // Salva o arquivo ZIP no disco
+    await writeFileAsync('arquivos.zip', zipData);
+
+    // Envia o arquivo ZIP como resposta
+    res.download('arquivos.zip', 'arquivos.zip', (err) => {
+      if (err) {
+        console.error('Erro ao enviar o arquivo ZIP:', err);
+        res.status(500).json({ error: 'Erro interno do servidor.' });
+      } else {
+        // Remove o arquivo ZIP do disco após o download
+        fs.unlink('arquivos.zip', (err) => {
+          if (err) {
+            console.error('Erro ao remover o arquivo ZIP:', err);
+          }
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao criar o arquivo ZIP:', error);
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+});
 
 
 
